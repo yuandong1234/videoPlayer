@@ -180,8 +180,7 @@ public class SurfaceRenderView extends SurfaceView implements IRenderView {
         }
 
         @Override
-        public void surfaceChanged(SurfaceHolder holder, int format,
-                                   int width, int height) {
+        public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
             mSurfaceHolder = holder;
             mIsFormatChanged = true;
             mFormat = format;

@@ -1,5 +1,6 @@
 package com.yuong.player;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 
@@ -18,6 +19,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.btn_play:
+//                startActivity(new Intent(this, IjkMediaPlayerActivity.class));
+                startActivity(new Intent(this, AndroidMediaPlayerActivity.class));
                 break;
         }
     }
