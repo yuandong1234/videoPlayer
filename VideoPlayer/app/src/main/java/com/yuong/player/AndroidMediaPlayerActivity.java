@@ -21,7 +21,8 @@ public class AndroidMediaPlayerActivity extends AppCompatActivity implements Sur
     private SurfaceHolder mSurfaceHolder;
     private Uri mUri;
 
-    private String path = "http://saas-resources.52jiayundong.com/test/upload_file/file/20200703/20200703153425055871.mp4";
+//    private String path = "http://saas-resources.52jiayundong.com/test/upload_file/file/20200703/20200703153425055871.mp4";
+    private String path = "http://saas-resources.52jiayundong.com/test/upload_file/file/20200624/20200624184542179942.mp4";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

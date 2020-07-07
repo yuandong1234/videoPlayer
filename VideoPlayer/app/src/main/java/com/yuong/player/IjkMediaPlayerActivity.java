@@ -15,7 +15,9 @@ public class IjkMediaPlayerActivity extends AppCompatActivity {
     private IjkVideoView mVideoView;
     private TableLayout mHudView;
 
-    private String mVideoPath = "http://saas-resources.52jiayundong.com/test/upload_file/file/20200703/20200703153425055871.mp4";
+    //    private String mVideoPath = "http://saas-resources.52jiayundong.com/test/upload_file/file/20200703/20200703153425055871.mp4";
+    private String mVideoPath = "http://saas-resources.52jiayundong.com/test/upload_file/file/20200624/20200624184542179942.mp4";
+
 
     private boolean mBackPressed;
 

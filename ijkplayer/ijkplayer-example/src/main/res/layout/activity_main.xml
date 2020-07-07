@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".activities.MainActivity">
+
+    <Button
+        android:id="@+id/btn_ijkplayer_demo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="ijkplayer demo"/>
+
+    <Button
+        android:id="@+id/btn_player"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="视频播放1"/>
+
+    <Button
+        android:id="@+id/btn_player2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="视频播放2"/>
+
+</LinearLayout>

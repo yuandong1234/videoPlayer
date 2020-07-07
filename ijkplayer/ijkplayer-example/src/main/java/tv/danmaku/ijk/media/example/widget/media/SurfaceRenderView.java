@@ -126,8 +126,7 @@ public class SurfaceRenderView extends SurfaceView implements IRenderView {
         private SurfaceRenderView mSurfaceView;
         private SurfaceHolder mSurfaceHolder;
 
-        public InternalSurfaceHolder(@NonNull SurfaceRenderView surfaceView,
-                                     @Nullable SurfaceHolder surfaceHolder) {
+        public InternalSurfaceHolder(@NonNull SurfaceRenderView surfaceView, @Nullable SurfaceHolder surfaceHolder) {
             mSurfaceView = surfaceView;
             mSurfaceHolder = surfaceHolder;
         }
