@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">MediaPlayerLib</string>
+    <string name="ok">OK</string>
+    <string name="VideoView_error_text_invalid_progressive_playback">Invalid progressive playback</string>
+    <string name="VideoView_error_text_unknown">Unknown</string>
+
 </resources>

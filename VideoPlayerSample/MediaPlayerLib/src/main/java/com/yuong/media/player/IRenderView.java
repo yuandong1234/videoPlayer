@@ -15,5 +15,5 @@ public interface IRenderView {
 
     void addRenderCallback(IRenderCallback callback);
 
-    void removeRenderCallback(IRenderCallback callback);
+    void removeRenderCallback();
 }

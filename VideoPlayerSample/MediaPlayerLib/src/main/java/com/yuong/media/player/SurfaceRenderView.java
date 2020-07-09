@@ -37,10 +37,16 @@ public class SurfaceRenderView extends SurfaceView implements IRenderView, Surfa
     }
 
     @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        mMeasureHelper.doMeasure(widthMeasureSpec, heightMeasureSpec);
+        setMeasuredDimension(mMeasureHelper.getMeasuredWidth(), mMeasureHelper.getMeasuredHeight());
+    }
+
+    @Override
     public void setVideoSize(int videoWidth, int videoHeight) {
         if (videoWidth > 0 && videoHeight > 0) {
             mMeasureHelper.setVideoSize(videoWidth, videoHeight);
-            getHolder().setFixedSize(videoWidth, videoHeight);
+             getHolder().setFixedSize(videoWidth, videoHeight);
             requestLayout();
         }
     }
@@ -54,32 +60,39 @@ public class SurfaceRenderView extends SurfaceView implements IRenderView, Surfa
     }
 
     @Override
-    public void addRenderCallback(IRenderCallback callback) {
-
-    }
-
-    @Override
-    public void removeRenderCallback(IRenderCallback callback) {
-
-    }
-
-    @Override
     public void setAspectRatio(int aspectRatio) {
+        mMeasureHelper.setAspectRatio(aspectRatio);
+        requestLayout();
+    }
 
+    @Override
+    public void addRenderCallback(IRenderCallback callback) {
+        mSurfaceCallback = callback;
+    }
+
+    @Override
+    public void removeRenderCallback() {
+        mSurfaceCallback = null;
     }
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
-
+        if (mSurfaceCallback != null) {
+            mSurfaceCallback.onSurfaceCreated(holder);
+        }
     }
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-
+        if (mSurfaceCallback != null) {
+            mSurfaceCallback.onSurfaceChanged(holder, format, width, height);
+        }
     }
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
-
+        if (mSurfaceCallback != null) {
+            mSurfaceCallback.onSurfaceDestroyed(holder);
+        }
     }
 }
