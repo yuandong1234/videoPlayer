@@ -446,8 +446,7 @@ public class IjkVideoView extends FrameLayout implements MediaController.MediaPl
                             if (mMediaController != null) {
                                 mMediaController.show();
                             }
-                        } else if (!isPlaying() &&
-                                (seekToPosition != 0 || getCurrentPosition() > 0)) {
+                        } else if (!isPlaying() && (seekToPosition != 0 || getCurrentPosition() > 0)) {
                             if (mMediaController != null) {
                                 // Show the media controls when we're paused into a video and make 'em stick.
                                 mMediaController.show(0);
@@ -869,10 +868,7 @@ public class IjkVideoView extends FrameLayout implements MediaController.MediaPl
     }
 
     private boolean isInPlaybackState() {
-        return (mMediaPlayer != null &&
-                mCurrentState != STATE_ERROR &&
-                mCurrentState != STATE_IDLE &&
-                mCurrentState != STATE_PREPARING);
+        return (mMediaPlayer != null && mCurrentState != STATE_ERROR && mCurrentState != STATE_IDLE && mCurrentState != STATE_PREPARING);
     }
 
     @Override

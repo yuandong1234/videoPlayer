@@ -15,10 +15,23 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    flavorDimensions "minSdkVersion"
+    productFlavors {
+        all32 {
+            minSdkVersion 19
+        }
+        all64 {
+            minSdkVersion 21
+        }
+    }
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'androidx.appcompat:appcompat:1.3.0-alpha01'
     implementation 'androidx.constraintlayout:constraintlayout:2.0.0-beta7'
+
+    all32Implementation project(':MediaPlayerLib')
+    all64Implementation project(':MediaPlayerLib')
 }

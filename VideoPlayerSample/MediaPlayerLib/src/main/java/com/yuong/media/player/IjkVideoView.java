@@ -41,6 +41,8 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
     private int mVideoHeight;
     private int mSurfaceWidth;
     private int mSurfaceHeight;
+    private int mVideoSarNum;
+    private int mVideoSarDen;
     private boolean mEnableMediaCodec;
     private IjkMediaPlayer mMediaPlayer = null;
     private SurfaceHolder mSurfaceHolder = null;
@@ -84,16 +86,31 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
     @Override
     public void onSurfaceCreated(SurfaceHolder holder) {
         mSurfaceHolder = holder;
+        Log.i(TAG, "############# onSurfaceCreated ##################");
+        if (mMediaPlayer != null)
+            bindSurfaceHolder(mMediaPlayer, holder);
+        else
+            openVideo();
     }
 
     @Override
     public void onSurfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-
+        Log.i(TAG, "############# onSurfaceChanged ################## width : " + width + " height : " + height);
+        mSurfaceWidth = width;
+        mSurfaceHeight = height;
+        boolean isValidState = (mTargetState == STATE_PLAYING);
+        boolean hasValidSize = (mVideoWidth == width && mVideoHeight == height);
+        if (mMediaPlayer != null && isValidState && hasValidSize) {
+            start();
+        }
     }
 
     @Override
     public void onSurfaceDestroyed(SurfaceHolder holder) {
+        Log.i(TAG, "############# onSurfaceDestroyed ##################");
         mSurfaceHolder = null;
+        if (mMediaPlayer != null)
+            mMediaPlayer.setDisplay(null);
     }
 
 
@@ -116,7 +133,7 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
             return;
         }
 
-        release(false);
+        release();
 
         AudioManager am = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
         am.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
@@ -127,7 +144,7 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
             // TODO: create SubtitleController in MediaPlayer, but we need
             // a context for the subtitle renderers
             mMediaPlayer.setOnPreparedListener(mPreparedListener);
-//            mMediaPlayer.setOnVideoSizeChangedListener(mSizeChangedListener);
+            mMediaPlayer.setOnVideoSizeChangedListener(mSizeChangedListener);
 //            mMediaPlayer.setOnCompletionListener(mCompletionListener);
             mMediaPlayer.setOnErrorListener(mErrorListener);
 //            mMediaPlayer.setOnInfoListener(mInfoListener);
@@ -143,11 +160,7 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
             bindSurfaceHolder(mMediaPlayer, mSurfaceHolder);
             mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
             mMediaPlayer.setScreenOnWhilePlaying(true);
-//            mPrepareStartTime = System.currentTimeMillis();
             mMediaPlayer.prepareAsync();
-//            if (mHudViewHolder != null)
-//                mHudViewHolder.setMediaPlayer(mMediaPlayer);
-//            attachMediaController();
             mCurrentState = STATE_PREPARING;
         } catch (IOException ex) {
             Log.e(TAG, "Unable to open content: " + mUri, ex);
@@ -179,6 +192,7 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
             }
 
             ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "opensles", 0);
+            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "dns_cache_clear", 1);
             ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "overlay-format", IjkMediaPlayer.SDL_FCC_RV32);
             ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "framedrop", 1);
             ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "start-on-prepared", 0);
@@ -205,22 +219,67 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
             mp.setDisplay(null);
             return;
         }
-        mp.setDisplay(null);
+        mp.setDisplay(holder);
     }
 
-    public void release(boolean cleartargetstate) {
+    public void start() {
+        Log.i(TAG, "############# start ##################");
+        if (isInPlaybackState()) {
+            mMediaPlayer.start();
+            mCurrentState = STATE_PLAYING;
+        }
+        mTargetState = STATE_PLAYING;
+    }
+
+    public void pause() {
+        Log.i(TAG, "############# pause ##################");
+        if (isInPlaybackState()) {
+            if (mMediaPlayer.isPlaying()) {
+                mMediaPlayer.pause();
+                mCurrentState = STATE_PAUSED;
+            }
+        }
+        mTargetState = STATE_PAUSED;
+    }
+
+    public void stop() {
+        Log.i(TAG, "############# stop ##################");
+        if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
+            mMediaPlayer.stop();
+        }
+    }
+
+
+    public void release() {
+        Log.i(TAG, "############# release ##################");
         if (mMediaPlayer != null) {
             mMediaPlayer.reset();
             mMediaPlayer.release();
             mMediaPlayer = null;
             mCurrentState = STATE_IDLE;
-            if (cleartargetstate) {
-                mTargetState = STATE_IDLE;
-            }
+            mTargetState = STATE_IDLE;
             AudioManager am = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
             am.abandonAudioFocus(null);
         }
     }
+
+    private boolean isInPlaybackState() {
+        return (mMediaPlayer != null && mCurrentState != STATE_ERROR && mCurrentState != STATE_IDLE && mCurrentState != STATE_PREPARING);
+    }
+
+    public boolean isPlaying() {
+        return isInPlaybackState() && mMediaPlayer.isPlaying();
+    }
+
+    public void initPlayer() {
+        IjkMediaPlayer.loadLibrariesOnce(null);
+        IjkMediaPlayer.native_profileBegin("libijkplayer.so");
+    }
+
+    public void destroyPlayer() {
+        IjkMediaPlayer.native_profileEnd();
+    }
+
 
     private IMediaPlayer.OnErrorListener mErrorListener = new IMediaPlayer.OnErrorListener() {
         public boolean onError(IMediaPlayer mp, int framework_err, int impl_err) {
@@ -236,6 +295,7 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
 
             if (getWindowToken() != null) {
                 int messageId;
+                //TODO 错误判断
                 if (framework_err == MediaPlayer.MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK) {
                     messageId = R.string.VideoView_error_text_invalid_progressive_playback;
                 } else {
@@ -263,6 +323,7 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
 
     IMediaPlayer.OnPreparedListener mPreparedListener = new IMediaPlayer.OnPreparedListener() {
         public void onPrepared(IMediaPlayer mp) {
+            Log.i(TAG, "############# onPrepared ##################");
             mCurrentState = STATE_PREPARED;
 
             if (mOnPreparedListener != null) {
@@ -271,33 +332,15 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
 
             mVideoWidth = mp.getVideoWidth();
             mVideoHeight = mp.getVideoHeight();
-
+            Log.i(TAG, "onPrepared video size: " + mVideoWidth + "/" + mVideoHeight);
             if (mVideoWidth != 0 && mVideoHeight != 0) {
-                Log.e(TAG, "video size: " + mVideoWidth + "/" + mVideoHeight);
-                // REMOVED: getHolder().setFixedSize(mVideoWidth, mVideoHeight);
-                if (mRenderView != null) {
-                    mRenderView.setVideoSize(mVideoWidth, mVideoHeight);
-                    //mRenderView.setVideoAspectRatio(mVideoSarNum, mVideoSarDen);
-                    if (!mRenderView.shouldWaitForResize() || mSurfaceWidth == mVideoWidth && mSurfaceHeight == mVideoHeight) {
-                        // We didn't actually change the size (it was already at the size
-                        // we need), so we won't get a "surface changed" callback, so
-                        // start the video here instead of in the callback.
-                        if (mTargetState == STATE_PLAYING) {
-                            start();
-                            if (mMediaController != null) {
-                                mMediaController.show();
-                            }
-                        } else if (!isPlaying() && (seekToPosition != 0 || getCurrentPosition() > 0)) {
-                            if (mMediaController != null) {
-                                // Show the media controls when we're paused into a video and make 'em stick.
-                                mMediaController.show(0);
-                            }
-                        }
+                mRenderView.setVideoSize(mVideoWidth, mVideoHeight);
+                if (mSurfaceWidth == mVideoWidth && mSurfaceHeight == mVideoHeight) {
+                    if (mTargetState == STATE_PLAYING) {
+                        start();
                     }
                 }
             } else {
-                // We don't know the video size yet, but should start anyway.
-                // The video size might be reported to us later.
                 if (mTargetState == STATE_PLAYING) {
                     start();
                 }
@@ -305,4 +348,22 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
         }
     };
 
+    IMediaPlayer.OnVideoSizeChangedListener mSizeChangedListener = new IMediaPlayer.OnVideoSizeChangedListener() {
+        public void onVideoSizeChanged(IMediaPlayer mp, int width, int height, int sarNum, int sarDen) {
+            Log.i(TAG, "############# onVideoSizeChanged ##################");
+            mVideoWidth = mp.getVideoWidth();
+            mVideoHeight = mp.getVideoHeight();
+            mVideoSarNum = mp.getVideoSarNum();
+            mVideoSarDen = mp.getVideoSarDen();
+            Log.e(TAG, "onVideoSizeChanged mVideoWidth :" + mVideoWidth + "  mVideoHeight: " + mVideoHeight);
+            Log.e(TAG, "onVideoSizeChanged mVideoSarNum :" + mVideoSarNum + "  mVideoSarDen: " + mVideoSarDen);
+            if (mVideoWidth != 0 && mVideoHeight != 0) {
+                if (mRenderView != null) {
+                    mRenderView.setVideoSize(mVideoWidth, mVideoHeight);
+                    mRenderView.setVideoAspectRatio(mVideoSarNum, mVideoSarDen);
+                }
+                requestLayout();
+            }
+        }
+    };
 }
