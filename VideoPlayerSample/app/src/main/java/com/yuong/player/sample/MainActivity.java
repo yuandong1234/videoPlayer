@@ -12,6 +12,7 @@ public class MainActivity extends AppCompatActivity {
     //    private String path = "http://saas-resources.52jiayundong.com/test/upload_file/file/20200624/20200624184542179942.mp4";
 //    private String path = "http://saas-resources.52jiayundong.com/test/upload_file/file/20200703/20200703153425055871.mp4";
     private String path = "http://ivi.bupt.edu.cn/hls/cctv1hd.m3u8";
+//    private String path = "rtsp://192.168.191.18:8554/test";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
