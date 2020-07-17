@@ -49,6 +49,7 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
 
     private IMediaPlayer.OnErrorListener mOnErrorListener;
     private IMediaPlayer.OnPreparedListener mOnPreparedListener;
+    private IMediaPlayer.OnCompletionListener mOnCompletionListener;
 
     private Uri mUri;
     private Map<String, String> mHeaders;
@@ -145,7 +146,7 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
             // a context for the subtitle renderers
             mMediaPlayer.setOnPreparedListener(mPreparedListener);
             mMediaPlayer.setOnVideoSizeChangedListener(mSizeChangedListener);
-//            mMediaPlayer.setOnCompletionListener(mCompletionListener);
+            mMediaPlayer.setOnCompletionListener(mCompletionListener);
             mMediaPlayer.setOnErrorListener(mErrorListener);
 //            mMediaPlayer.setOnInfoListener(mInfoListener);
 //            mMediaPlayer.setOnBufferingUpdateListener(mBufferingUpdateListener);
@@ -162,18 +163,11 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
             mMediaPlayer.setScreenOnWhilePlaying(true);
             mMediaPlayer.prepareAsync();
             mCurrentState = STATE_PREPARING;
-        } catch (IOException ex) {
+        } catch (IOException | IllegalArgumentException ex) {
             Log.e(TAG, "Unable to open content: " + mUri, ex);
             mCurrentState = STATE_ERROR;
             mTargetState = STATE_ERROR;
             mErrorListener.onError(mMediaPlayer, MediaPlayer.MEDIA_ERROR_UNKNOWN, 0);
-        } catch (IllegalArgumentException ex) {
-            Log.e(TAG, "Unable to open content: " + mUri, ex);
-            mCurrentState = STATE_ERROR;
-            mTargetState = STATE_ERROR;
-            mErrorListener.onError(mMediaPlayer, MediaPlayer.MEDIA_ERROR_UNKNOWN, 0);
-        } finally {
-            // REMOVED: mPendingSubtitleTracks.clear();
         }
     }
 
@@ -193,19 +187,22 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
 
             ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "opensles", 0);
             ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "dns_cache_clear", 1);
+            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "reconnect", 5);
             ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "overlay-format", IjkMediaPlayer.SDL_FCC_RV32);
-            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "framedrop", 1);
-            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "start-on-prepared", 0);
             ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "http-detect-range-support", 0);
-            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_CODEC, "skip_loop_filter", 48);
-            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "reconnect", 5);
+            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "start-on-prepared", 0);// 需要准备好后自动播放
+            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_CODEC, "skip_loop_filter", 48);//设置是否开启环路过滤: 0开启，画面质量高，解码开销大，48关闭，画面质量差点，解码开销小
 
-            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "probesize", 1024 * 100);
-            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "analyzemaxduration", 100);
-            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "analyzeduration", 1);
-            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "flush_packets", 1);
-            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "reconnect", 5);
-            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "packet-buffering", 0);
+            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "probesize", 1024 * 100);//播放前的探测Size，默认是1M, 改小一点会出画面更快
+            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "analyzemaxduration", 100);//设置播放前的最大探测时间 （100未测试是否是最佳值
+            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "analyzeduration", 1);//设置播放前的探测时间 1,达到首屏秒开效果
+            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "packet-buffering", 0);//是否开启预缓冲，一般直播项目会开启，达到秒开的效果，不过带来了播放丢帧卡顿的体验
+            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "flush_packets", 1);//每处理一个packet之后刷新io上下文
+
+            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "framedrop", 1);//视频帧处理不过来的时候丢弃一些帧达到同步的效果
+            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_CODEC, "skip_frame", 8);// 跳过帧数
+
+            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "rtsp_transport", "tcp");//如果是rtsp协议，可以优先用tcp(默认是用udp)
         }
 
         return ijkMediaPlayer;
@@ -280,9 +277,38 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
         IjkMediaPlayer.native_profileEnd();
     }
 
+    /**
+     * int MEDIA_INFO_UNKNOWN = 1;//未知信息
+     * int MEDIA_INFO_STARTED_AS_NEXT = 2;//播放下一条
+     * int MEDIA_INFO_VIDEO_RENDERING_START = 3;//视频开始整备中，准备渲染
+     * int MEDIA_INFO_VIDEO_TRACK_LAGGING = 700;//视频日志跟踪
+     * int MEDIA_INFO_BUFFERING_START = 701;//开始缓冲中 开始缓冲
+     * int MEDIA_INFO_BUFFERING_END = 702;//缓冲结束
+     * int MEDIA_INFO_NETWORK_BANDWIDTH = 703;//网络带宽，网速方面
+     * int MEDIA_INFO_BAD_INTERLEAVING = 800;//
+     * int MEDIA_INFO_NOT_SEEKABLE = 801;//不可设置播放位置，直播方面
+     * int MEDIA_INFO_METADATA_UPDATE = 802;//
+     * int MEDIA_INFO_TIMED_TEXT_ERROR = 900;
+     * int MEDIA_INFO_UNSUPPORTED_SUBTITLE = 901;//不支持字幕
+     * int MEDIA_INFO_SUBTITLE_TIMED_OUT = 902;//字幕超时
+     * int MEDIA_INFO_VIDEO_INTERRUPT= -10000;//数据连接中断，一般是视频源有问题或者数据格式不支持，比如音频不是AAC之类的
+     * int MEDIA_INFO_VIDEO_ROTATION_CHANGED = 10001;//视频方向改变，视频选择信息
+     * int MEDIA_INFO_AUDIO_RENDERING_START = 10002;//音频开始整备中
+     */
 
+    /**
+     * int MEDIA_ERROR_UNKNOWN = 1;
+     * int MEDIA_ERROR_SERVER_DIED = 100;//服务挂掉，视频中断，一般是视频源异常或者不支持的视频类型。
+     * int MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK = 200;//数据错误没有有效的回收
+     * int MEDIA_ERROR_IO = -1004;//IO 本地文件或网络相关错误
+     * int MEDIA_ERROR_MALFORMED = -1007;//音视频格式错误，demux或解码错误
+     * int MEDIA_ERROR_UNSUPPORTED = -1010;//不支持的音视频格式
+     * int MEDIA_ERROR_TIMED_OUT = -110;//数据超时
+     * Error (-10000,0)
+     */
     private IMediaPlayer.OnErrorListener mErrorListener = new IMediaPlayer.OnErrorListener() {
         public boolean onError(IMediaPlayer mp, int framework_err, int impl_err) {
+            Log.i(TAG, "############# onError ##################");
             Log.e(TAG, "Error: " + framework_err + "," + impl_err);
             mCurrentState = STATE_ERROR;
             mTargetState = STATE_ERROR;
@@ -344,6 +370,18 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
                 if (mTargetState == STATE_PLAYING) {
                     start();
                 }
+            }
+        }
+    };
+
+    private IMediaPlayer.OnCompletionListener mCompletionListener = new IMediaPlayer.OnCompletionListener() {
+        public void onCompletion(IMediaPlayer mp) {
+            Log.i(TAG, "############# onCompletion ##################");
+            mCurrentState = STATE_PLAYBACK_COMPLETED;
+            mTargetState = STATE_PLAYBACK_COMPLETED;
+
+            if (mOnCompletionListener != null) {
+                mOnCompletionListener.onCompletion(mMediaPlayer);
             }
         }
     };

@@ -17,15 +17,21 @@ android {
         }
     }
 
-    flavorDimensions "minSdkVersion"
-    productFlavors {
-        all32 {
-            minSdkVersion 19
-        }
-        all64 {
-            minSdkVersion 21
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['libs']
         }
     }
+
+//    flavorDimensions "minSdkVersion"
+//    productFlavors {
+//        all32 {
+//            minSdkVersion 19
+//        }
+//        all64 {
+//            minSdkVersion 21
+//        }
+//    }
 
 }
 
@@ -36,13 +42,13 @@ dependencies {
 
     implementation 'tv.danmaku.ijk.media:ijkplayer-java:0.8.8'
 
-    all32Implementation 'tv.danmaku.ijk.media:ijkplayer-armv5:0.8.8'
-    all32Implementation 'tv.danmaku.ijk.media:ijkplayer-armv7a:0.8.8'
-    all32Implementation 'tv.danmaku.ijk.media:ijkplayer-x86:0.8.8'
-
-    all64Implementation 'tv.danmaku.ijk.media:ijkplayer-armv5:0.8.8'
-    all64Implementation 'tv.danmaku.ijk.media:ijkplayer-armv7a:0.8.8'
-    all64Implementation 'tv.danmaku.ijk.media:ijkplayer-arm64:0.8.8'
-    all64Implementation 'tv.danmaku.ijk.media:ijkplayer-x86:0.8.8'
-    all64Implementation 'tv.danmaku.ijk.media:ijkplayer-x86_64:0.8.8'
+//    all32Implementation 'tv.danmaku.ijk.media:ijkplayer-armv5:0.8.8'
+//    all32Implementation 'tv.danmaku.ijk.media:ijkplayer-armv7a:0.8.8'
+//    all32Implementation 'tv.danmaku.ijk.media:ijkplayer-x86:0.8.8'
+//
+//    all64Implementation 'tv.danmaku.ijk.media:ijkplayer-armv5:0.8.8'
+//    all64Implementation 'tv.danmaku.ijk.media:ijkplayer-armv7a:0.8.8'
+//    all64Implementation 'tv.danmaku.ijk.media:ijkplayer-arm64:0.8.8'
+//    all64Implementation 'tv.danmaku.ijk.media:ijkplayer-x86:0.8.8'
+//    all64Implementation 'tv.danmaku.ijk.media:ijkplayer-x86_64:0.8.8'
 }
