@@ -281,13 +281,13 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
      * int MEDIA_INFO_UNKNOWN = 1;//未知信息
      * int MEDIA_INFO_STARTED_AS_NEXT = 2;//播放下一条
      * int MEDIA_INFO_VIDEO_RENDERING_START = 3;//视频开始整备中，准备渲染
-     * int MEDIA_INFO_VIDEO_TRACK_LAGGING = 700;//视频日志跟踪
+     * int MEDIA_INFO_VIDEO_TRACK_LAGGING = 700;//视频编码过于复杂，解码器无法足够快的解码
      * int MEDIA_INFO_BUFFERING_START = 701;//开始缓冲中 开始缓冲
      * int MEDIA_INFO_BUFFERING_END = 702;//缓冲结束
      * int MEDIA_INFO_NETWORK_BANDWIDTH = 703;//网络带宽，网速方面
      * int MEDIA_INFO_BAD_INTERLEAVING = 800;//
      * int MEDIA_INFO_NOT_SEEKABLE = 801;//不可设置播放位置，直播方面
-     * int MEDIA_INFO_METADATA_UPDATE = 802;//
+     * int MEDIA_INFO_METADATA_UPDATE = 802;//一组新的媒体的元数据用
      * int MEDIA_INFO_TIMED_TEXT_ERROR = 900;
      * int MEDIA_INFO_UNSUPPORTED_SUBTITLE = 901;//不支持字幕
      * int MEDIA_INFO_SUBTITLE_TIMED_OUT = 902;//字幕超时
@@ -297,9 +297,10 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
      */
 
     /**
+     * framework_err
      * int MEDIA_ERROR_UNKNOWN = 1;
      * int MEDIA_ERROR_SERVER_DIED = 100;//服务挂掉，视频中断，一般是视频源异常或者不支持的视频类型。
-     * int MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK = 200;//数据错误没有有效的回收
+     * int MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK = 200;//播放错误（一般视频播放比较慢或视频本身有问题会引发）。
      * int MEDIA_ERROR_IO = -1004;//IO 本地文件或网络相关错误
      * int MEDIA_ERROR_MALFORMED = -1007;//音视频格式错误，demux或解码错误
      * int MEDIA_ERROR_UNSUPPORTED = -1010;//不支持的音视频格式
@@ -312,6 +313,59 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
             Log.e(TAG, "Error: " + framework_err + "," + impl_err);
             mCurrentState = STATE_ERROR;
             mTargetState = STATE_ERROR;
+            switch (framework_err) {
+                case IMediaPlayer.MEDIA_ERROR_IO:
+                    Log.e(TAG, "本地文件或网络媒体错误");
+                    break;
+                case IMediaPlayer.MEDIA_ERROR_TIMED_OUT:
+                    Log.e(TAG, "媒体播放超时");
+                    break;
+                case IMediaPlayer.MEDIA_ERROR_SERVER_DIED:
+                    Log.e(TAG, "媒体服务器挂起");
+                    break;
+                case IMediaPlayer.MEDIA_ERROR_UNSUPPORTED:
+                    Log.e(TAG, "媒体音视频格式不支持");
+                    break;
+                case IMediaPlayer.MEDIA_ERROR_MALFORMED:
+                    Log.e(TAG, "媒体音视频格式错误");
+                    break;
+                case IMediaPlayer.MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK:
+                    Log.e(TAG, "媒体播放错误，不支持渐进式播放");
+                    break;
+                case IMediaPlayer.MEDIA_ERROR_UNKNOWN:
+                    Log.e(TAG, "未知错误");
+                    break;
+                default:
+                    Log.e(TAG, "未知错误");
+                    break;
+            }
+
+            switch (impl_err) {
+                case IMediaPlayer.MEDIA_INFO_UNKNOWN:
+                    Log.e(TAG, "媒体信息未知错误");
+                    break;
+                case IMediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START:
+                    Log.e(TAG, "视频开始渲染，显示图像");
+                    break;
+                case IMediaPlayer.MEDIA_INFO_VIDEO_TRACK_LAGGING:
+                    Log.e(TAG, "视频编码过于复杂，解码器无法足够快的解码");
+                    break;
+                case IMediaPlayer.MEDIA_INFO_BUFFERING_START:
+                    Log.e(TAG, "暂停播放等待缓冲更多数据");
+                    break;
+                case IMediaPlayer.MEDIA_INFO_BUFFERING_END:
+                    Log.e(TAG, "视频缓冲结束恢复播放");
+                    break;
+                case IMediaPlayer.MEDIA_INFO_BAD_INTERLEAVING:
+                    Log.e(TAG, "媒体音视频交错出现错误");
+                    break;
+                case IMediaPlayer.MEDIA_INFO_NOT_SEEKABLE:
+                    Log.e(TAG, "媒体不支持Seek");
+                    break;
+                case IMediaPlayer.MEDIA_INFO_METADATA_UPDATE:
+                    Log.e(TAG, "一组新的媒体的元数据用");
+                    break;
+            }
 
             if (mOnErrorListener != null) {
                 if (mOnErrorListener.onError(mMediaPlayer, framework_err, impl_err)) {
@@ -321,7 +375,6 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
 
             if (getWindowToken() != null) {
                 int messageId;
-                //TODO 错误判断
                 if (framework_err == MediaPlayer.MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK) {
                     messageId = R.string.VideoView_error_text_invalid_progressive_playback;
                 } else {
