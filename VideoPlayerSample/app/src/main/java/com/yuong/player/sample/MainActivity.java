@@ -10,10 +10,11 @@ public class MainActivity extends AppCompatActivity {
     private IjkVideoView videoView;
 
     //    private String path = "http://saas-resources.52jiayundong.com/test/upload_file/file/20200624/20200624184542179942.mp4";
-    private String path = "http://saas-resources.52jiayundong.com/test/upload_file/file/20200703/20200703153425055871.mp4";
-//    private String path = "http://ivi.bupt.edu.cn/hls/cctv1hd.m3u8";
+//    private String path = "http://saas-resources.52jiayundong.com/test/upload_file/file/20200703/20200703153425055871.mp4";
+    private String path = "https://venue-saas.oss-cn-shenzhen.aliyuncs.com/test/upload_file/file/20200703/20200703153425055871.mp4";
+//    private String path = "http://ivi.bupt.edu.cn/hls/cctv1hd.m3u8";//直播
 //    private String path = "rtsp://192.168.42.18:8554/test";//rtsp://192.168.42.18:8554/test  //使用VCL推流直播
-//    private String path = "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov";
+//    private String path = "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov";//直播
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

@@ -49,6 +49,7 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
 
     private IMediaPlayer.OnErrorListener mOnErrorListener;
     private IMediaPlayer.OnPreparedListener mOnPreparedListener;
+    private IMediaPlayer.OnInfoListener mOnInfoListener;
     private IMediaPlayer.OnCompletionListener mOnCompletionListener;
 
     private Uri mUri;
@@ -146,6 +147,7 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
             // a context for the subtitle renderers
             mMediaPlayer.setOnPreparedListener(mPreparedListener);
             mMediaPlayer.setOnVideoSizeChangedListener(mSizeChangedListener);
+            mMediaPlayer.setOnInfoListener(mInfoListener);
             mMediaPlayer.setOnCompletionListener(mCompletionListener);
             mMediaPlayer.setOnErrorListener(mErrorListener);
 //            mMediaPlayer.setOnInfoListener(mInfoListener);
@@ -192,17 +194,19 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
             ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "http-detect-range-support", 0);
             ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "start-on-prepared", 0);// 需要准备好后自动播放
             ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_CODEC, "skip_loop_filter", 48);//设置是否开启环路过滤: 0开启，画面质量高，解码开销大，48关闭，画面质量差点，解码开销小
+            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "framedrop", 1);//视频帧处理不过来的时候丢弃一些帧达到同步的效果
+            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_CODEC, "skip_frame", 8);// 跳过帧数
+
+            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "packet-buffering", 0);//是否开启预缓冲，一般直播项目会开启，达到秒开的效果，不过带来了播放丢帧卡顿的体验
+
 
             ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "probesize", 1024 * 100);//播放前的探测Size，默认是1M, 改小一点会出画面更快
             ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "analyzemaxduration", 100);//设置播放前的最大探测时间 （100未测试是否是最佳值
             ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "analyzeduration", 1);//设置播放前的探测时间 1,达到首屏秒开效果
-            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "packet-buffering", 0);//是否开启预缓冲，一般直播项目会开启，达到秒开的效果，不过带来了播放丢帧卡顿的体验
             ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "flush_packets", 1);//每处理一个packet之后刷新io上下文
 
-            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "framedrop", 1);//视频帧处理不过来的时候丢弃一些帧达到同步的效果
-            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_CODEC, "skip_frame", 8);// 跳过帧数
 
-            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "rtsp_transport", "tcp");//如果是rtsp协议，可以优先用tcp(默认是用udp)
+//            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "rtsp_transport", "tcp");//如果是rtsp协议，可以优先用tcp(默认是用udp)
         }
 
         return ijkMediaPlayer;
@@ -436,6 +440,73 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
             if (mOnCompletionListener != null) {
                 mOnCompletionListener.onCompletion(mMediaPlayer);
             }
+        }
+    };
+
+    private IMediaPlayer.OnInfoListener mInfoListener = new IMediaPlayer.OnInfoListener() {
+        public boolean onInfo(IMediaPlayer mp, int arg1, int arg2) {
+            Log.e(TAG, "############# onInfo ################## ");
+            Log.e(TAG, "onInfo  arg1 ：" + arg1);
+            if (mOnInfoListener != null) {
+                mOnInfoListener.onInfo(mp, arg1, arg2);
+            }
+            switch (arg1) {
+                case IMediaPlayer.MEDIA_INFO_OPEN_INPUT://媒体信息打开输入
+                    Log.e(TAG, "媒体信息打开输入");
+                    break;
+                case IMediaPlayer.MEDIA_INFO_FIND_STREAM_INFO://媒体信息查找流信息
+                    Log.e(TAG, "媒体信息查找流信息");
+                    break;
+                case IMediaPlayer.MEDIA_INFO_COMPONENT_OPEN://媒体信息组件打开
+                    Log.e(TAG, "媒体信息组件打开");
+                    break;
+                case IMediaPlayer.MEDIA_INFO_AUDIO_DECODED_START://媒体信息音频解码开始
+                    Log.e(TAG, "媒体信息音频解码开始");
+                    break;
+                case IMediaPlayer.MEDIA_INFO_VIDEO_DECODED_START://媒体信息视频解码开始
+                    Log.e(TAG, "媒体信息视频解码开始");
+                    break;
+                case IMediaPlayer.MEDIA_INFO_VIDEO_TRACK_LAGGING://视频编码过于复杂，解码器无法足够快的解码出帧
+                    Log.e(TAG, "视频编码过于复杂，解码器无法足够快的解码出帧");
+                    break;
+                case IMediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START://媒体视频开始渲染
+                    Log.e(TAG, "媒体视频开始渲染");
+                    break;
+                case IMediaPlayer.MEDIA_INFO_AUDIO_RENDERING_START://媒体音频开始渲染
+                    Log.e(TAG, "媒体音频开始渲染");
+                    break;
+                case IMediaPlayer.MEDIA_INFO_BUFFERING_START://暂停播放等待缓冲更多数据
+                    Log.e(TAG, "暂停播放等待缓冲更多数据");
+                    break;
+                case IMediaPlayer.MEDIA_INFO_BUFFERING_END://视频缓冲结束恢复播放
+                    Log.e(TAG, "视频缓冲结束恢复播放");
+                    break;
+                case IMediaPlayer.MEDIA_INFO_NETWORK_BANDWIDTH://网速
+                    Log.e(TAG, "网络速度: " + arg2);
+                    break;
+                case IMediaPlayer.MEDIA_INFO_BAD_INTERLEAVING://音视频错乱传输，视频跟音频不同步
+                    Log.e(TAG, "音视频错乱传输，视频跟音频不同步");
+                    break;
+                case IMediaPlayer.MEDIA_INFO_NOT_SEEKABLE://不可移动帧，对于直播流
+                    Log.e(TAG, "媒体不支持Seek");
+                    break;
+                case IMediaPlayer.MEDIA_INFO_METADATA_UPDATE:
+                    Log.e(TAG, "媒体信息元数据更新");
+                    break;
+                case IMediaPlayer.MEDIA_INFO_UNSUPPORTED_SUBTITLE:
+                    Log.e(TAG, "媒体不支持字幕信息");
+                    break;
+                case IMediaPlayer.MEDIA_INFO_SUBTITLE_TIMED_OUT://渲染字幕时间过长
+                    Log.e(TAG, "渲染字幕时间过长");
+                    break;
+                case IMediaPlayer.MEDIA_INFO_VIDEO_ROTATION_CHANGED://媒体信息视频旋转已更改
+                    Log.e(TAG, "媒体信息视频旋转已更改");
+                    break;
+                case IMediaPlayer.MEDIA_INFO_UNKNOWN://未知的信息
+                    Log.e(TAG, "未知的信息");
+                    break;
+            }
+            return true;
         }
     };
 
