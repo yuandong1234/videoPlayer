@@ -5,7 +5,7 @@ import android.util.AttributeSet;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
-import com.yuong.media.player.utils.MeasureHelper;
+import com.yuong.media.player.utils.VideoMeasureUtil;
 
 /**
  * 视频渲染视图
@@ -13,7 +13,7 @@ import com.yuong.media.player.utils.MeasureHelper;
 public class SurfaceRenderView extends SurfaceView implements IRenderView, SurfaceHolder.Callback {
 
 
-    private MeasureHelper mMeasureHelper;
+    private VideoMeasureUtil mVideoMeasureUtil;
     private IRenderCallback mSurfaceCallback;
 
     public SurfaceRenderView(Context context) {
@@ -30,7 +30,7 @@ public class SurfaceRenderView extends SurfaceView implements IRenderView, Surfa
     }
 
     private void initView() {
-        mMeasureHelper = new MeasureHelper();
+        mVideoMeasureUtil = new VideoMeasureUtil();
         getHolder().addCallback(this);
         //noinspection deprecation
         getHolder().setType(SurfaceHolder.SURFACE_TYPE_NORMAL);
@@ -38,14 +38,14 @@ public class SurfaceRenderView extends SurfaceView implements IRenderView, Surfa
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        mMeasureHelper.doMeasure(widthMeasureSpec, heightMeasureSpec);
-        setMeasuredDimension(mMeasureHelper.getMeasuredWidth(), mMeasureHelper.getMeasuredHeight());
+        mVideoMeasureUtil.doMeasure(widthMeasureSpec, heightMeasureSpec);
+        setMeasuredDimension(mVideoMeasureUtil.getMeasuredWidth(), mVideoMeasureUtil.getMeasuredHeight());
     }
 
     @Override
     public void setVideoSize(int videoWidth, int videoHeight) {
         if (videoWidth > 0 && videoHeight > 0) {
-            mMeasureHelper.setVideoSize(videoWidth, videoHeight);
+            mVideoMeasureUtil.setVideoSize(videoWidth, videoHeight);
             getHolder().setFixedSize(videoWidth, videoHeight);
             requestLayout();
         }
@@ -54,14 +54,14 @@ public class SurfaceRenderView extends SurfaceView implements IRenderView, Surfa
     @Override
     public void setVideoAspectRatio(int videoSarNum, int videoSarDen) {
         if (videoSarNum > 0 && videoSarDen > 0) {
-            mMeasureHelper.setVideoAspectRatio(videoSarNum, videoSarDen);
+            mVideoMeasureUtil.setVideoAspectRatio(videoSarNum, videoSarDen);
             requestLayout();
         }
     }
 
     @Override
     public void setAspectRatio(int aspectRatio) {
-        mMeasureHelper.setAspectRatio(aspectRatio);
+        mVideoMeasureUtil.setAspectRatio(aspectRatio);
         requestLayout();
     }
 

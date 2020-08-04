@@ -7,7 +7,7 @@ import com.yuong.media.player.SurfaceRenderView;
 /**
  * 视频宽高测量
  */
-public class MeasureHelper {
+public class VideoMeasureUtil {
     private int mVideoWidth;
     private int mVideoHeight;
     private int mVideoSarNum;

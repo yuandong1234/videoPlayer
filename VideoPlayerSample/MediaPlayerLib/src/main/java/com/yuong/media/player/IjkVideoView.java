@@ -12,6 +12,10 @@ import android.view.Gravity;
 import android.view.SurfaceHolder;
 import android.widget.FrameLayout;
 
+import com.yuong.media.player.network.NetSpeed;
+import com.yuong.media.player.widget.LoadingView;
+import com.yuong.media.player.widget.NetSpeedView;
+
 import java.io.IOException;
 import java.util.Map;
 
@@ -32,6 +36,8 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
 
     private Context mContext;
     private SurfaceRenderView mRenderView;
+    private LoadingView mLoadingView;
+    private NetSpeedView mNetSpeedView;
 
     private int mCurrentAspectRatio = IRenderView.AR_ASPECT_FIT_PARENT;
     private int mCurrentState = STATE_IDLE;
@@ -52,6 +58,8 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
     private IMediaPlayer.OnInfoListener mOnInfoListener;
     private IMediaPlayer.OnCompletionListener mOnCompletionListener;
 
+    private NetSpeed mNetSpeed;
+
     private Uri mUri;
     private Map<String, String> mHeaders;
 
@@ -66,6 +74,8 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
     public IjkVideoView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         initVideoView(context);
+        initLoadingView();
+        initNetSpeedView();
     }
 
     private void initVideoView(Context context) {
@@ -83,6 +93,23 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
         setFocusable(true);
         setFocusableInTouchMode(true);
         requestFocus();
+    }
+
+    private void initLoadingView() {
+        mLoadingView = new LoadingView(getContext());
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.CENTER);
+        mLoadingView.setLayoutParams(lp);
+        addView(mLoadingView);
+        mLoadingView.dismiss();
+    }
+
+    private void initNetSpeedView() {
+        mNetSpeedView = new NetSpeedView(getContext());
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.CENTER);
+        mNetSpeedView.setLayoutParams(lp);
+        addView(mNetSpeedView);
+        mNetSpeedView.dismissNetSpeed();
+        mNetSpeed = new NetSpeed(getContext(), mNetSpeedView);
     }
 
     @Override
@@ -165,6 +192,7 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
             mMediaPlayer.setScreenOnWhilePlaying(true);
             mMediaPlayer.prepareAsync();
             mCurrentState = STATE_PREPARING;
+            mLoadingView.show();
         } catch (IOException | IllegalArgumentException ex) {
             Log.e(TAG, "Unable to open content: " + mUri, ex);
             mCurrentState = STATE_ERROR;
@@ -196,14 +224,13 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
             ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_CODEC, "skip_loop_filter", 48);//设置是否开启环路过滤: 0开启，画面质量高，解码开销大，48关闭，画面质量差点，解码开销小
             ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "framedrop", 1);//视频帧处理不过来的时候丢弃一些帧达到同步的效果
             ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_CODEC, "skip_frame", 8);// 跳过帧数
+            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "flush_packets", 1);//每处理一个packet之后刷新io上下文
 
-            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "packet-buffering", 0);//是否开启预缓冲，一般直播项目会开启，达到秒开的效果，不过带来了播放丢帧卡顿的体验
-
+            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "packet-buffering", 1);//是否开启预缓冲，一般直播项目会开启，达到秒开的效果，不过带来了播放丢帧卡顿的体验
 
             ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "probesize", 1024 * 100);//播放前的探测Size，默认是1M, 改小一点会出画面更快
             ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "analyzemaxduration", 100);//设置播放前的最大探测时间 （100未测试是否是最佳值
             ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "analyzeduration", 1);//设置播放前的探测时间 1,达到首屏秒开效果
-            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "flush_packets", 1);//每处理一个packet之后刷新io上下文
 
 
 //            ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "rtsp_transport", "tcp");//如果是rtsp协议，可以优先用tcp(默认是用udp)
@@ -315,6 +342,7 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
         public boolean onError(IMediaPlayer mp, int framework_err, int impl_err) {
             Log.i(TAG, "############# onError ##################");
             Log.e(TAG, "Error: " + framework_err + "," + impl_err);
+            mLoadingView.dismiss();
             mCurrentState = STATE_ERROR;
             mTargetState = STATE_ERROR;
             switch (framework_err) {
@@ -408,6 +436,7 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
         public void onPrepared(IMediaPlayer mp) {
             Log.i(TAG, "############# onPrepared ##################");
             mCurrentState = STATE_PREPARED;
+            mLoadingView.dismiss();
 
             if (mOnPreparedListener != null) {
                 mOnPreparedListener.onPrepared(mMediaPlayer);
@@ -477,9 +506,11 @@ public class IjkVideoView extends FrameLayout implements IRenderCallback {
                     break;
                 case IMediaPlayer.MEDIA_INFO_BUFFERING_START://暂停播放等待缓冲更多数据
                     Log.e(TAG, "暂停播放等待缓冲更多数据");
+                    mNetSpeed.register();
                     break;
                 case IMediaPlayer.MEDIA_INFO_BUFFERING_END://视频缓冲结束恢复播放
                     Log.e(TAG, "视频缓冲结束恢复播放");
+                    mNetSpeed.unRegister();
                     break;
                 case IMediaPlayer.MEDIA_INFO_NETWORK_BANDWIDTH://网速
                     Log.e(TAG, "网络速度: " + arg2);
